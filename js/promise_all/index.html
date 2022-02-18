@@ -7,37 +7,49 @@
   <body>
     <p>This is my page</p>
 		<script>
-      function fetchAndDecode(url, type) {
+      function fetchAndDecode(url) {
         return fetch(url).then(response => {
-          if (!response.ok)
+          if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
-          else
-            return (type === 'text') ? response.text() : response.blob();
+          } else {
+            const contentType = response.headers.get('content-type').split(';')[0];
+            switch (contentType) {
+              case 'image/jpeg':
+                return response.blob();
+              case 'text/plain':
+                return response.text();
+              default:
+                return response.blob();
+            }
+          }
         }).catch(e => {
           console.log(`There has been a problem with your fetch operation for "${url}": ` + e.message);
         });
       }
 
-      let coffee = fetchAndDecode('coffee.jpg', 'blob');
-      let tea = fetchAndDecode('tea.jpg', 'blob');
-      let description = fetchAndDecode('description.txt', 'text');
+      function displayObject(obj) {
+        let newElem;
+        if (obj instanceof Blob) {
+          let objURL = URL.createObjectURL(obj);
+          let image = document.createElement('img');
+          image.src = objURL;
+          newElem = image;
+        } else {
+          let para = document.createElement('p');
+          para.textContent = obj;
+          newElem = objURL;
+        }
+        if (newElem)
+          document.body.appendChild(newElem);
+      }
+
+      let coffee = fetchAndDecode('coffee.jpg');
+      let tea = fetchAndDecode('tea.jpg');
+      let description = fetchAndDecode('description.txt');
 
       Promise.all([coffee, tea, description]).then(values => {
         console.log(values);
-        let objectURL1 = URL.createObjectURL(values[0]);
-        let objectURL2 = URL.createObjectURL(values[1]);
-        let descText = values[2];
-
-        let image1 = document.createElement('img');
-        let image2 = document.createElement('img');
-        image1.src = objectURL1;
-        image2.src = objectURL2;
-        document.body.appendChild(image1);
-        document.body.appendChild(image2);
-
-        let para = document.createElement('p');
-        para.textContent = descText;
-        document.body.appendChild(para);
+        values.forEach(displayObject);
       });
     </script>
   </body>
